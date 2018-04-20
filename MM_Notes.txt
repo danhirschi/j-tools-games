@@ -1,0 +1,153 @@
+Mastermind
+4 pegs, chouce of 8 colors for each
+8^4 combinations(4096)
+score black and white pegs
+black for each digit in correct position
+white for digits included, but not in the correct position
+
+
+Numeralogic
+four places for digits 0-9, no duplicates 
+*/10 9 8 7 combinations (5040)
+score in 2 digits (number of correct digits, number of correct digits in correct position)
+
+correct_position =: +/ guess = solution
+
+(if no duplicates present)
+correct_digits =: +/ +/ guess =/ solution
+
+Since I am used to the Numeralogic scoring, i am using it's definition for whitescore.
+
+NB. ---------------------------------------
+
+blackscore=: 4 : '+/ x = y'
+
+   1 2 3 4 blackscore 2 3 1 1
+0
+   1 2 3 4 blackscore 1 2 3 1 
+3
+   1 2 3 4 blackscore 5 1 2 3 
+0
+
+
+NB. if using Numeralogic rules (no duplicates in guess or key)
+whitescore3=: 4 : '+/ +/ x =/ y'
+
+   1 2 3 4 whitescore3 5 1 2 3 
+3
+   1 2 3 4 = / 5 1 2 3 
+0 1 0 0
+0 0 1 0
+0 0 0 1
+0 0 0 0
+
+NB. these are incorrect (duplicates do not score correctly)
+   1 2 3 4 whitescore3 2 3 1 1
+4
+   1 2 3 4 =/ 2 3 1 1
+0 0 1 1
+1 0 0 0
+0 1 0 0
+0 0 0 0
+
+   1 2 2 3 whitescore3 1 1 2 3
+5
+   1 2 2 3 =/ 1 1 2 3
+1 1 0 0
+0 0 1 0
+0 0 1 0
+0 0 0 1
+
+
+
+NB. to score with duplicates need to step through digits of key, and remove matches from guess.
+---------------------------------
+
+key
+1 2 2 3 
+
+guess 
+1 1 2 3
+
+check if 1 is within 1 1 2 3
+yes, add 1 to whitescore (now 1)
+check if 2 is within 1 2 3 (remove first matched 1)
+yes, add 1 to whitescore (now 2)
+check if 2 is within 1 3
+no, move on
+check if 3 is within 1 3
+yes, add 1 to whitescore (now 3)
+
+
+the above with recursion:
+---------------------------------
+
+whitescore1=: 4 : 0    NB. x = key   y = guess    use recursion
+if. 0 = # x  do. r=. 0
+NB. match all of y to first element of x.  if digit match(s), nb will remove first instance from y  
+else. nb =. y ([: -. ([: i. [: # [) e. ] {.~ 1 <. [: # ]) I. b =. y = {. x
+r =. (+./ b) + (}. x) whitescore1 nb # y   NB. add 1 if there were any matches
+end.
+)
+
+   1 2 2 3 whitescore1 1 1 2 3
+3
+   1 2 2 3 whitescore1~ 1 1 2 3
+3
+
+
+NB. next, can it be done without looping or recursion?
+
+NB. first idea
+NB. take and insert (+./) followed by plus insert (+/)
+
+   +/ +./ 1 2 3 4 =/ 2 3 1 1
+4
+   +/ +./ 2 3 1 1 =/ 1 2 3 4 
+3
+
+NB. transpose binary matrix is the same as swapping x and y
+   +/ +./ |: 1 2 3 4 =/ 2 3 1 1  
+3
+NB. order matters.
+NB. i thought i could take lower value from the 2.
+
+NB. this fails regardless of order
+
+   +/ +./ 1 2 2 3 =/ 1 1 2 3
+4
+   +/ +./ |: 1 2 2 3 =/ 1 1 2 3
+4
+
+
+
+NB. ---------------------------------
+NB. make a list of all possible digits (no duplicates)
+NB. compare guess to list and compare key to same list
+NB. lower value is correct answer
+
+   ]x1=. +/ 1 2 2 3 =/ i. 10
+0 1 2 1 0 0 0 0 0 0
+   ]y1=. +/ 1 1 2 3 =/ i. 10
+0 2 1 1 0 0 0 0 0 0
+   x1 <. y1
+0 1 1 1 0 0 0 0 0 0
+   +/ x1 <. y1
+3
+
+NB. don't need i. 10, nub of key and guess will suffice  
+
++/ 1 2 2 3 =/ ~. 1 2 2 3 , 1 1 2 3
+
+   whitescore2=: 4 : 0    NB. x = key   y = guess
+cmb=. ~. x,y
+x1=. +/ x =/ cmb
+y1=. +/ y =/ cmb
++/ x1 <. y1
+)
+
+
+
+
+
+
